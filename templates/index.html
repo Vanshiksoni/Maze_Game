@@ -25,8 +25,11 @@
   <button id="generateBtn">Generate Maze</button>
   <button id="solveBtn">Solve Maze</button>
   <button id="resetBtn">Reset Player</button>
+  <button id="compareBtn">Show Comparison</button>
 
   <div>
+
+ 
     <!-- Difficulty level -->
   <button id="easyBtn">Easy</button>
     <button id="mediumBtn">Medium</button>
@@ -44,9 +47,17 @@
   🕹️ Use Arrow Keys or WASD to move. Press <b>H</b> for a hint!
 </p>
 
+   <canvas id="mazeCanvas"></canvas>
 
-  <canvas id="mazeCanvas"></canvas>
+<!-- Hidden Chart initially -->
+<div id="comparisonContainer" style="display: none;">
+  <h2>Algorithm Comparison</h2>
+  <canvas id="comparisonChart"></canvas>
+</div>
 
+  <!-- <canvas id="mazeCanvas"></canvas> -->
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

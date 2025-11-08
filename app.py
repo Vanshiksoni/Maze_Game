@@ -2,6 +2,8 @@ from flask import Flask, render_template, jsonify, request
 import random
 from collections import deque
 import heapq
+import time
+
 
 app = Flask(__name__)
 
@@ -322,30 +324,72 @@ def generate():
 #         "path": [[r, c] for r, c in path]
 #     })
 
+# below is for just searches 
+# @app.route("/solve", methods=["POST"])
+# def solve():
+#     data = request.json
+#     maze = data.get("maze")
+#     start = tuple(data.get("start", (0, 0)))
+#     end = tuple(data.get("end", (len(maze) - 1, len(maze[0]) - 1)))
+#     algo = data.get("algo", "astar")
+
+#     if algo == "bfs":
+#         explored, path = bfs_with_exploration(maze, start, end)
+#     elif algo == "dfs":
+#         explored, path = dfs_with_exploration(maze, start, end)
+#     elif algo == "dijkstra":
+#         explored, path = dijkstra_with_exploration(maze, start, end)
+#     elif algo == "greedy":
+#         explored, path = greedy_best_first(maze, start, end)
+#     elif algo == "bidirectional":
+#         explored, path = bidirectional_bfs(maze, start, end)
+#     else:
+#         explored, path = astar_with_exploration(maze, start, end)
+
+#     return jsonify({
+#         "explored": [[r, c] for r, c in explored],
+#         "path": [[r, c] for r, c in path]
+#     })
+
+# these for compariosn 
 @app.route("/solve", methods=["POST"])
 def solve():
+    import time  # make sure this is at the top of your file too
+
     data = request.json
     maze = data.get("maze")
     start = tuple(data.get("start", (0, 0)))
     end = tuple(data.get("end", (len(maze) - 1, len(maze[0]) - 1)))
     algo = data.get("algo", "astar")
 
-    if algo == "bfs":
-        explored, path = bfs_with_exploration(maze, start, end)
-    elif algo == "dfs":
-        explored, path = dfs_with_exploration(maze, start, end)
-    elif algo == "dijkstra":
-        explored, path = dijkstra_with_exploration(maze, start, end)
-    elif algo == "greedy":
-        explored, path = greedy_best_first(maze, start, end)
-    elif algo == "bidirectional":
-        explored, path = bidirectional_bfs(maze, start, end)
-    else:
-        explored, path = astar_with_exploration(maze, start, end)
+    # Dictionary of all algorithms
+    algorithms = {
+        "bfs": bfs_with_exploration,
+        "dfs": dfs_with_exploration,
+        "dijkstra": dijkstra_with_exploration,
+        "greedy": greedy_best_first,
+        "bidirectional": bidirectional_bfs,
+        "astar": astar_with_exploration
+    }
 
+    # default to A* if invalid key
+    if algo not in algorithms:
+        algo = "astar"
+
+    # Measure execution time
+    start_time = time.time()
+    explored, path = algorithms[algo](maze, start, end)
+    end_time = time.time()
+
+    exec_time = round(end_time - start_time, 4)  # seconds rounded to 4 decimals
+
+    # Return more info for comparison
     return jsonify({
         "explored": [[r, c] for r, c in explored],
-        "path": [[r, c] for r, c in path]
+        "path": [[r, c] for r, c in path],
+        "time": float(exec_time),
+        "steps": len(explored),
+        "path_length": len(path)
     })
 
 

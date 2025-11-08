@@ -8,6 +8,10 @@ const easyBtn = document.getElementById("easyBtn"); //accepts the difficulty lev
 const mediumBtn = document.getElementById("mediumBtn");
 const hardBtn = document.getElementById("hardBtn");
 
+const compareBtn = document.getElementById("compareBtn");
+compareBtn.onclick = compareAlgorithms;
+
+
 let maze = [];
 let cellSize = 20;
 let explored = [];
@@ -19,6 +23,8 @@ let gameActive = false;
 let timer = 0;
 let timerInterval = null;
 let bestPathLength = 0;
+let comparisonResults = [];
+
 
 // ----------------- Maze Size ---------
 async function generateMaze(rows = 25, cols = 35) {
@@ -243,6 +249,53 @@ async function showHint() {
   drawMaze();
 }
 
+// --------------------for compariosn 
+async function compareAlgorithms() {
+  if (!maze.length) return alert("Generate a maze first!");
+
+  const algos = ["bfs", "dfs", "dijkstra", "greedy", "bidirectional", "astar"];
+  comparisonResults = [];
+
+  for (const algo of algos) {
+    const startTime = performance.now();
+
+    const res = await fetch("/solve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        maze,
+        start: [0, 0],
+        end: [maze.length - 1, maze[0].length - 1],
+        algo,
+      }),
+    });
+
+    const data = await res.json();
+    const endTime = performance.now();
+
+    // 🧠 Convert to milliseconds for visibility
+    let measuredTime = Number(data.time);
+    if (isNaN(measuredTime) || measuredTime <= 0) {
+      measuredTime = (endTime - startTime); // in ms
+    } else {
+      measuredTime *= 100000; // convert sec → ms
+    }
+
+    comparisonResults.push({
+      name: algo.toUpperCase(),
+      time: measuredTime, // in ms now
+      steps: Number(data.steps) || 0,
+      pathLength: Number(data.path_length) || 0,
+    });
+  }
+
+  console.log("Comparison Results:", comparisonResults);
+  showComparisonChart();
+}
+
+
+
+
 // ------------- TIMER & STATS -------------
 function startTimer() {
   timer = 0;
@@ -298,6 +351,80 @@ window.addEventListener("resize", () => {
     drawMaze();
   }
 });
+
+// ------------- CHART COMPARISON DISPLAY -------------
+function showComparisonChart() {
+  // Check Chart.js loaded
+  if (typeof Chart === "undefined") {
+    alert("⚠️ Chart.js not loaded! Add <script src='https://cdn.jsdelivr.net/npm/chart.js'></script> in your HTML before script.js");
+    return;
+  }
+
+  // Show comparison container
+  const container = document.getElementById("comparisonContainer");
+  if (!container) {
+    alert("⚠️ Missing chart container in HTML (add <div id='comparisonContainer'>)");
+    return;
+  }
+  container.style.display = "block";
+
+  // Prepare data for Chart.js
+  const labels = comparisonResults.map(r => r.name);
+  const times = comparisonResults.map(r => Number(r.time));
+  const steps = comparisonResults.map(r => Number(r.steps));
+  const paths = comparisonResults.map(r => Number(r.pathLength));
+
+  const ctx = document.getElementById("comparisonChart").getContext("2d");
+
+  // Destroy previous chart if exists
+  if (window.compChart) window.compChart.destroy();
+
+  window.compChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Execution Time (s)",
+          data: times,
+          backgroundColor: "rgba(56, 189, 248, 0.7)",
+          borderColor: "#38bdf8",
+          borderWidth: 2,
+        },
+        {
+          label: "Steps Explored",
+          data: steps,
+          backgroundColor: "rgba(99, 102, 241, 0.6)",
+          borderColor: "#6366f1",
+          borderWidth: 2,
+        },
+        {
+          label: "Path Length",
+          data: paths,
+          backgroundColor: "rgba(34, 197, 94, 0.6)",
+          borderColor: "#22c55e",
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: "#f8fafc" } },
+        title: {
+          display: true,
+          text: "Algorithm Performance Comparison",
+          color: "#38bdf8",
+          font: { size: 18 },
+        },
+      },
+      scales: {
+        x: { ticks: { color: "#f8fafc" } },
+        y: { ticks: { color: "#f8fafc" }, beginAtZero: true },
+      },
+    },
+  });
+}
 
 // Auto-generate first maze
 generateMaze();
